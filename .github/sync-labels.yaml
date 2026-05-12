@@ -1,0 +1,26 @@
+name: Sync Labels to All Repos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/labels.yml'    # 라벨 파일 변경 시에만 실행
+  workflow_dispatch:             # 수동 실행 가능
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Sync labels to all repos
+        uses: EndBug/label-sync@v2
+        with:
+          config-file: .github/labels.yaml
+          delete-other-labels: true       # 정의에 없는 라벨 삭제
+          token: ${{ secrets.ORG_PAT }}
+          repositories: |
+            juling-go/juling-go
+            juling-go/data
+            juling-go/backend
+            juling-go/frontend
