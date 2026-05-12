@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/labels.yaml'
+      - '.github/labels.json'
   workflow_dispatch:
 
 jobs:
@@ -18,8 +18,7 @@ jobs:
         with:
           github-token: ${{ secrets.ORG_PAT }}
           script: |
-            const fs   = require('fs');
-            const yaml = require('/home/runner/work/_temp/__github_script/node_modules/js-yaml');
+            const fs = require('fs');
 
             const repos = [
               'juling-go/juling-go',
@@ -28,8 +27,8 @@ jobs:
               'juling-go/frontend',
             ];
 
-            const labels = yaml.load(
-              fs.readFileSync('.github/labels.yaml', 'utf8')
+            const labels = JSON.parse(
+              fs.readFileSync('.github/labels.json', 'utf8')
             );
             const labelNames = labels.map(l => l.name);
 
@@ -42,7 +41,7 @@ jobs:
                 { owner, repo: repoName, per_page: 100 }
               );
 
-              // 2. labels.yaml에 없는 라벨 삭제
+              // 2. labels.json에 없는 라벨 삭제
               for (const label of existing) {
                 if (!labelNames.includes(label.name)) {
                   await github.rest.issues.deleteLabel({
@@ -50,11 +49,11 @@ jobs:
                     repo: repoName,
                     name: label.name,
                   });
-                  console.log(`${repo} - "${label.name}" 삭제`);
+                  console.log(`🗑️  ${repo} - "${label.name}" 삭제`);
                 }
               }
 
-              // 3. labels.yaml 기준으로 생성 또는 업데이트
+              // 3. 생성 또는 업데이트
               for (const label of labels) {
                 try {
                   await github.rest.issues.createLabel({
