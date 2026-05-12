@@ -4,78 +4,30 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/labels.yaml'
+      - '.github/labels.yaml'    # 💡 파일 확장자를 아래 config-file과 동일하게 맞추세요. (.yml 또는 .yaml)
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false           # 💡 한 저장소 동기화가 실패해도 나머지 저장소는 마저 진행하도록 설정
+      matrix:
+        repository: 
+          - juling-go/juling-go
+          - juling-go/data
+          - juling-go/backend
+          - juling-go/frontend
+
     steps:
       - uses: actions/checkout@v6
 
-      - name: Sync labels via API
-        uses: actions/github-script@v7
+      - name: Sync labels for ${{ matrix.repository }}
+        uses: EndBug/label-sync@v2
+        env:
+          # 💡 핵심 포인트: 액션이 작동할 타겟 저장소를 Matrix 변수로 덮어씌웁니다.
+          GITHUB_REPOSITORY: ${{ matrix.repository }}
         with:
-          github-token: ${{ secrets.ORG_PAT }}
-          script: |
-            const fs   = require('fs');
-            const yaml = require('js-yaml');
-
-            const repos = [
-              'juling-go/juling-go',
-              'juling-go/data',
-              'juling-go/backend',
-              'juling-go/frontend',
-            ];
-
-            const labels = yaml.load(
-              fs.readFileSync('.github/labels.yaml', 'utf8')
-            );
-            const labelNames = labels.map(l => l.name);
-
-            for (const repo of repos) {
-              const [owner, repoName] = repo.split('/');
-
-              // 1. 기존 라벨 전체 조회
-              const existing = await github.paginate(
-                github.rest.issues.listLabelsForRepo,
-                { owner, repo: repoName, per_page: 100 }
-              );
-
-              // 2. labels.yaml에 없는 라벨 삭제
-              for (const label of existing) {
-                if (!labelNames.includes(label.name)) {
-                  await github.rest.issues.deleteLabel({
-                    owner,
-                    repo: repoName,
-                    name: label.name,
-                  });
-                  console.log(`${repo} - "${label.name}" 삭제`);
-                }
-              }
-
-              // 3. labels.yaml 기준으로 생성 또는 업데이트
-              for (const label of labels) {
-                try {
-                  await github.rest.issues.createLabel({
-                    owner,
-                    repo: repoName,
-                    name: label.name,
-                    color: label.color,
-                    description: label.description ?? '',
-                  });
-                  console.log(`✅ ${repo} - "${label.name}" 생성`);
-                } catch (e) {
-                  await github.rest.issues.updateLabel({
-                    owner,
-                    repo: repoName,
-                    name: label.name,
-                    color: label.color,
-                    description: label.description ?? '',
-                  });
-                  console.log(`🔄 ${repo} - "${label.name}" 업데이트`);
-                }
-              }
-
-              console.log(`✅ ${repo} 동기화 완료\n`);
-            }
+          config-file: .github/labels.yaml # 위 paths와 확장자 일치 확인
+          delete-other-labels: true
+          token: ${{ secrets.ORG_PAT }}
