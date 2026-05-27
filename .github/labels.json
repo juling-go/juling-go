@@ -5,5 +5,8 @@
   { "name": "docs",    "color": "0052cc", "description": "문서 작업" },
   { "name": "hotfix",  "color": "b60205", "description": "긴급 수정" },
   { "name": "WIP",     "color": "fbca04", "description": "진행 중" },
-  { "name": "refactor", "color": "008672", "description": "코드 구조 및 가독성 개선" }
+  { "name": "refactor", "color": "008672", "description": "코드 구조 및 가독성 개선" },
+  { "name": "deploy", "color": "86004b", "description": "서버 및 프로덕션 환경 배포" },
+  { "name": "CI/CD", "color": "6f42c1", "description": "배포 파이프라인 및 인프라 설정" },
+  { "name": "release", "color": "002b5b", "description": "정식 버전 출시 및 배포" }
 ]
