@@ -4,5 +4,6 @@
   { "name": "chore",   "color": "e4e669", "description": "기타 작업" },
   { "name": "docs",    "color": "0052cc", "description": "문서 작업" },
   { "name": "hotfix",  "color": "b60205", "description": "긴급 수정" },
-  { "name": "WIP",     "color": "fbca04", "description": "진행 중" }
+  { "name": "WIP",     "color": "fbca04", "description": "진행 중" },
+  { "name": "refactor", "color": "008672", "description": "코드 구조 및 가독성 개선" }
 ]
