@@ -1,9 +1,12 @@
 [submodule "backend"]
 	path = backend
 	url = https://github.com/juling-go/backend
+	branch = main
 [submodule "frontend"]
 	path = frontend
 	url = https://github.com/juling-go/frontend
+	branch = main
 [submodule "data"]
 	path = data
 	url = https://github.com/juling-go/data
+	branch = main

@@ -1,0 +1,100 @@
+name: Update Submodules
+
+on:
+  # Triggered by submodule repositories (recommended)
+  repository_dispatch:
+    types:
+      - submodule-main-push
+
+  # Fallback: periodic check (optional but useful)
+  schedule:
+    - cron: '17 * * * *'
+
+  # Manual trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-submodules
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          ref: main
+          persist-credentials: true
+
+      - name: Select submodules to update
+        id: select
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SOURCE_REPO: ${{ github.event.client_payload.source_repo }}
+        run: |
+          set -euo pipefail
+
+          # Default: update all (schedule / manual / unknown payload)
+          targets="backend frontend data"
+
+          if [[ "${EVENT_NAME}" == "repository_dispatch" && -n "${SOURCE_REPO}" ]]; then
+            case "${SOURCE_REPO}" in
+              juling-go/backend)  targets="backend" ;;
+              juling-go/frontend) targets="frontend" ;;
+              juling-go/data)     targets="data" ;;
+              *) targets="backend frontend data" ;;
+            esac
+          fi
+
+          echo "targets=${targets}" >> "$GITHUB_OUTPUT"
+          echo "Selected targets: ${targets}"
+
+      - name: Update selected submodules to latest main
+        shell: bash
+        env:
+          TARGETS: ${{ steps.select.outputs.targets }}
+        run: |
+          set -euo pipefail
+
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+          # Update only the selected submodule(s) when dispatched; otherwise update all.
+          # (branch=main is set in .gitmodules)
+          for path in ${TARGETS}; do
+            echo "Updating submodule: ${path}"
+            git submodule update --remote -- "${path}"
+          done
+
+          echo "--- git status ---"
+          git status --porcelain
+
+      - name: Commit and push to main if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "No changes detected; nothing to push."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add .gitmodules backend frontend data
+          git commit -m "chore: update submodule references"
+
+          # In case main moved since checkout (rare, but safe)
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          echo "Pushed submodule pointer update to main."
