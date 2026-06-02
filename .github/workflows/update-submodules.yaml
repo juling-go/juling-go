@@ -8,8 +8,7 @@ on:
 
   # Fallback: periodic check (optional but useful)
   schedule:
-    - cron: '* 6 * * 1'
-      timezone: 'Asia/Seoul'
+    - cron: '0 21 * * 0'  # UTC 21:00 SUN -> KST 06:00 MON
 
   # Manual trigger
   workflow_dispatch:
