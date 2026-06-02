@@ -8,7 +8,8 @@ on:
 
   # Fallback: periodic check (optional but useful)
   schedule:
-    - cron: '17 * * * *'
+    - cron: '* 6 * * 1'
+      timezone: 'Asia/Seoul'
 
   # Manual trigger
   workflow_dispatch:
@@ -32,6 +33,7 @@ jobs:
           submodules: recursive
           ref: main
           persist-credentials: true
+          token: ${{ github.token }}
 
       - name: Select submodules to update
         id: select
@@ -39,18 +41,32 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           SOURCE_REPO: ${{ github.event.client_payload.source_repo }}
+          SOURCE_REF: ${{ github.event.client_payload.source_ref }}
         run: |
           set -euo pipefail
 
-          # Default: update all (schedule / manual / unknown payload)
+          # Default: update all (schedule / manual)
           targets="backend frontend data"
 
-          if [[ "${EVENT_NAME}" == "repository_dispatch" && -n "${SOURCE_REPO}" ]]; then
+          if [[ "${EVENT_NAME}" == "repository_dispatch" ]]; then
+            if [[ -z "${SOURCE_REPO}" ]]; then
+              echo "Missing client_payload.source_repo"
+              exit 1
+            fi
+
+            if [[ -n "${SOURCE_REF}" && "${SOURCE_REF}" != "refs/heads/main" ]]; then
+              echo "Ignoring non-main push: ${SOURCE_REF}"
+              exit 0
+            fi
+
             case "${SOURCE_REPO}" in
               juling-go/backend)  targets="backend" ;;
               juling-go/frontend) targets="frontend" ;;
               juling-go/data)     targets="data" ;;
-              *) targets="backend frontend data" ;;
+              *)
+                echo "Unknown source_repo: ${SOURCE_REPO}"
+                exit 1
+                ;;
             esac
           fi
 
